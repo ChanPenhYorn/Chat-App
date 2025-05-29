@@ -36,8 +36,21 @@ class AudioRecorderController extends GetxController {
     await recorderController.stop();
     isRecording.value = false;
 
-    if (recordingPath != null && File(recordingPath!).existsSync()) {
-      onSend(recordingPath!);
+    // Reset path for next recording
+    await initRecorder();
+  }
+
+  Future<void> cancelRecording() async {
+    if (isRecording.value) {
+      await recorderController.stop();
+      isRecording.value = false;
+    }
+
+    if (recordingPath != null) {
+      final file = File(recordingPath!);
+      if (file.existsSync()) {
+        await file.delete();
+      }
     }
 
     // Reset path for next recording

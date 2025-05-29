@@ -71,10 +71,15 @@ class _ChatScreenState extends State<ChatScreen> {
         color: Colors.white,
         child: Row(
           children: [
-            IconButton(
-              onPressed: _filePicker,
-              icon: const Icon(Icons.image_outlined),
-            ),
+            Obx(() {
+              if (audioCtrl.isRecording.value) {
+                return SizedBox.shrink();
+              }
+              return IconButton(
+                onPressed: _filePicker,
+                icon: const Icon(Icons.image_outlined),
+              );
+            }),
             Obx(() {
               if (audioCtrl.isRecording.value) {
                 return SizedBox.shrink();
@@ -209,6 +214,12 @@ Widget buildFileMessage(String filePath, BuildContext context) {
 }
 
 Widget buildImageMessage(String imagePath) {
+  // Helper method to determine if it's a network URL
+  bool isNetworkImage(String path) {
+    final trimmed = path.trim();
+    return trimmed.startsWith('http://') || trimmed.startsWith('https://');
+  }
+
   return GestureDetector(
     onTap: () {
       Navigator.push(
@@ -229,12 +240,29 @@ Widget buildImageMessage(String imagePath) {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(8),
-          child: Image.file(
-            File(imagePath),
-            width: 200,
-            height: 200,
-            fit: BoxFit.cover,
-          ),
+          child: isNetworkImage(imagePath)
+              ? Image.network(
+                  imagePath,
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(child: CircularProgressIndicator());
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(Icons.error);
+                  },
+                )
+              : Image.file(
+                  File(imagePath),
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(Icons.error);
+                  },
+                ),
         ),
       ),
     ),

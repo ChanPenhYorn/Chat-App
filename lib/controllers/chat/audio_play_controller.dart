@@ -1,14 +1,19 @@
+import 'dart:io';
 import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 
 class AudioPlayerController extends GetxController {
   final String audioPath;
 
-  late final PlayerController playerController;
+  late PlayerController playerController;
   final RxBool isPlaying = false.obs;
   final RxString duration = '00:00'.obs;
   final RxString totalDuration = '00:00'.obs;
   final RxBool isPlayerPrepared = false.obs;
+
+  late String _localPath;
 
   AudioPlayerController(this.audioPath) {
     playerController = PlayerController();
@@ -17,75 +22,70 @@ class AudioPlayerController extends GetxController {
 
   Future<void> _initPlayer() async {
     try {
-      print('Initializing player for: $audioPath');
+      String pathToUse = audioPath;
+
+      // Check if it's a network file
+      if (audioPath.startsWith("http")) {
+        _localPath = await _downloadFile(audioPath);
+        pathToUse = _localPath;
+      }
+
       await playerController.preparePlayer(
-        path: audioPath,
+        path: pathToUse,
         shouldExtractWaveform: true,
         noOfSamples: 100,
         volume: 1.0,
       );
-      isPlayerPrepared.value = true;
 
       final durationMs = await playerController.getDuration(DurationType.max);
-      print('Total duration: $durationMs ms');
       totalDuration.value = _formatDuration(durationMs);
 
       playerController.onCurrentDurationChanged.listen((currentMs) {
         duration.value = _formatDuration(currentMs);
         if (currentMs >= durationMs && isPlaying.value) {
-          print('Audio reached end, resetting');
           isPlaying.value = false;
-          _resetPlayer();
+          duration.value = _formatDuration(0);
         }
       });
 
       playerController.onPlayerStateChanged.listen((state) {
         isPlaying.value = state == PlayerState.playing;
-        print('Player state changed: $state');
       });
+
+      isPlayerPrepared.value = true;
     } catch (e) {
       print('Error initializing player: $e');
       isPlayerPrepared.value = false;
     }
   }
 
-  Future<void> _resetPlayer() async {
-    try {
-      print('Resetting player for: $audioPath');
-      if (isPlaying.value) {
-        await playerController.stopPlayer();
-      }
-      await playerController.preparePlayer(
-        path: audioPath,
-        shouldExtractWaveform: true,
-        noOfSamples: 100,
-        volume: 1.0,
-      );
-      isPlayerPrepared.value = true;
-      duration.value = _formatDuration(0);
-      print('Player reset complete');
-    } catch (e) {
-      print('Error resetting player: $e');
-      isPlayerPrepared.value = false;
-    }
+  Future<String> _downloadFile(String url) async {
+    final response = await http.get(Uri.parse(url));
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/${url.split('/').last}');
+    await file.writeAsBytes(response.bodyBytes);
+    return file.path;
   }
 
   Future<void> togglePlayPause() async {
-    try {
-      if (!isPlayerPrepared.value) {
-        print('Player not prepared, reinitializing');
-        await _initPlayer();
-      }
-      if (isPlaying.value) {
-        print('Pausing player');
-        await playerController.pausePlayer();
-      } else {
-        print('Starting player');
-        await playerController.startPlayer();
-      }
-    } catch (e) {
-      print('Error toggling play/pause: $e');
+    if (!isPlayerPrepared.value) {
+      await _initPlayer();
     }
+
+    if (isPlaying.value) {
+      await playerController.pausePlayer();
+    } else {
+      await playerController.startPlayer();
+    }
+  }
+
+  Future<void> stopAndReset() async {
+    if (isPlaying.value) {
+      await playerController.stopPlayer();
+    }
+
+    duration.value = _formatDuration(0);
+    isPlaying.value = false;
   }
 
   String _formatDuration(int milliseconds) {
@@ -96,7 +96,6 @@ class AudioPlayerController extends GetxController {
 
   @override
   void onClose() {
-    print('Disposing player for: $audioPath');
     playerController.stopPlayer();
     playerController.dispose();
     super.onClose();

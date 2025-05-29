@@ -18,6 +18,15 @@ class WaveformRecorderWidget extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.delete_outline,
+                      // color: Colors.red,
+                    ),
+                    onPressed: () {
+                      audioCtrl.stopRecording(onSend);
+                    },
+                  ),
                   Expanded(
                     child: audioCtrl.isRecording.value
                         ? AudioWaveforms(
@@ -25,15 +34,16 @@ class WaveformRecorderWidget extends StatelessWidget {
                             size: const Size(double.infinity, 50),
                             recorderController: audioCtrl.recorderController,
                             waveStyle: const WaveStyle(
-                                waveColor: Colors.blue,
-                                showMiddleLine: false,
-                                extendWaveform: true),
+                              waveColor: Colors.blue,
+                              showMiddleLine: false,
+                              extendWaveform: true,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.grey[200],
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            margin: const EdgeInsets.only(right: 8),
+                            padding: EdgeInsets.symmetric(horizontal: 8),
+                            margin: EdgeInsets.only(right: 8),
                           )
                         : const SizedBox.shrink(),
                   ),

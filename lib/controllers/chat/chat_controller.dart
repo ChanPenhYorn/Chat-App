@@ -67,4 +67,51 @@ class ChatController extends GetxController {
   void isRecordingAudio(bool value) {
     isRecording.value = value;
   }
+
+  @override
+  void onInit() {
+    super.onInit();
+    _loadDemoMessages();
+  }
+
+  void _loadDemoMessages() {
+    messages.addAll([
+      MessageModel(
+        id: UniqueKey().toString(),
+        senderId: 'user123',
+        timestamp: DateTime.now().subtract(Duration(minutes: 5)),
+        content: "Hey! How's it going?",
+        type: MessageTypeEnum.text,
+      ),
+      MessageModel(
+        id: UniqueKey().toString(),
+        senderId: 'user123',
+        timestamp: DateTime.now().subtract(Duration(minutes: 4)),
+        content: "https://images.unsplash.com/photo-1607746882042-944635dfe10e",
+        type: MessageTypeEnum.image,
+      ),
+      MessageModel(
+        id: UniqueKey().toString(),
+        senderId: 'currentUser',
+        timestamp: DateTime.now().subtract(Duration(minutes: 3)),
+        content: "https://sample-videos.com/audio/mp3/crowd-cheering.mp3",
+        type: MessageTypeEnum.audio,
+      ),
+      MessageModel(
+        id: UniqueKey().toString(),
+        senderId: 'user123',
+        timestamp: DateTime.now().subtract(Duration(minutes: 2)),
+        content:
+            "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+        type: MessageTypeEnum.file,
+      ),
+      MessageModel(
+        id: UniqueKey().toString(),
+        senderId: 'currentUser',
+        timestamp: DateTime.now().subtract(Duration(minutes: 1)),
+        content: "Great! Let's catch up later.",
+        type: MessageTypeEnum.text,
+      ),
+    ]);
+  }
 }
