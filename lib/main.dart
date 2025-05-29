@@ -14,6 +14,7 @@ void main() async {
   Get.put(ThemeController());
   AppTranslation translations = AppTranslation();
   await translations.loadTranslations();
+
   runApp(MyApp(
     translations: translations,
   ));

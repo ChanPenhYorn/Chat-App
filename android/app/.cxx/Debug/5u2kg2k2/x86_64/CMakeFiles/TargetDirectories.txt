@@ -1,0 +1,2 @@
+/Volumes/LocalDiskE/biz_source/flutter/project/chat_app/android/app/.cxx/Debug/5u2kg2k2/x86_64/CMakeFiles/edit_cache.dir
+/Volumes/LocalDiskE/biz_source/flutter/project/chat_app/android/app/.cxx/Debug/5u2kg2k2/x86_64/CMakeFiles/rebuild_cache.dir
