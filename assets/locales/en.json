@@ -1,0 +1,104 @@
+{
+  "translate": "Translate",
+  "dictionary": "Dictionary",
+  "save": "Save",
+  "history": "History",
+  "setting": "Setting",
+  "write_text": "Write your text",
+  "edit": "Edit",
+  "delete_all": "Delete All",
+  "search": "Search",
+  "document": "Document",
+  "doc_des": "Upload and Select Sentences for Translation",
+
+  "light": "Light",
+  "dark": "Dark",
+  "use_device_settings": "Use device settings",
+  "use_device_descriptors": "Match appearance to your device’s Display & Brightness settings",
+
+  "switch_language": "Switch Language",
+  "appearance": "Appearance",
+  "about": "About",
+  "credit": "Credit & License",
+  "text_size": "Text Size",
+  "text_size_des": "Our Application supports Dynamic Type will adapt to the text size you prefer for reading.",
+
+  "english_language": "English",
+  "khmer_language": "Khmer",
+  "korean_language": "Korean",
+  "chinese_language": "Chinese",
+
+  "about_desc": "This screen provides information about the application",
+  "credit_desc": "This screen provides information about the Credit & License",
+
+  "about_app": "About the Application",
+  "about_app_desc": "<b>Phum Dictionary</b>, developed by <b>Biz Solution</b>, is an innovative digital resource designed to tackle the challenges faced by students and the general public in translating various languages including Khmer, English, Korean and Chinese. <b>Phum Dictionary</b> not only facilitates effective communication but also contributes to the preservation and promotion of the Khmer language and script.",
+  "development_by": "Developed by",
+  "kh_to_kh": "Khmer to Khmer",
+  "app": "Application",
+  "version": "Version",
+
+  "drop_file": "Drop file here or choose a file",
+  "browse": "Browse file",
+
+  "show_more": "Show more",
+  "extract_text": "Extracted Text",
+
+  "dictionary_not_available": "The current language's dictionary is not available yet. It will be available soon. Please check back later.",
+
+  "coming_soon": "Coming soon",
+  "loading": "Loading...",
+
+  "image": "Image",
+  "camera": "Camera",
+
+  "cancel": "Cancel",
+  "you_select_all": "You have selected all",
+  "select_all": "Select all",
+  "notifications": "Notifications",
+
+  "system": "System",
+
+  "copy_all_text": "You have copied all text",
+  "select_all_text": "You have selected all text",
+
+  "lost_connection": "Please check your internet connection.",
+
+  "okay": "Okay",
+
+  "no_text_found": "No text detected in the document. Please ensure the document contains readable text and try again.",
+
+  "security_alert": "Security Alert",
+
+  "risk_device_message": "Your device appears to be Jailbroken or Rooted, which may pose security risks and could compromise the safety of your data. To ensure a secure experience, your usage of this app has been restricted.\n\nIn order to regain access to PhumDictionary, we recommend restoring your device to its original state by removing any Jailbreak or Root access.",
+  "emulator_message": "⚠️ Emulator Detected! ⚠️\n\nRunning this app in an emulator is not allowed for security reasons. Please use a real device to ensure data protection and proper functionality.",
+  "external_storage_message": "  🔒 Security Risk! 🔒\n\nThis app is installed on external storage, which increases the risk of data breaches and unauthorized access. Please install it on internal storage for better security.",
+  "app_compromise_message": "🚨 App Integrity Compromised! 🚨\n\nUnauthorized modifications detected in the app. Please ensure you are using the official version from the App Store to prevent security threats.  ",
+  "risk_message": "🚨 Security Alert! 🚨\n\nYour device has been detected as jailbroken or rooted. This can expose your personal data to security risks, unauthorized access, and potential malware threats. Please use a secure device to continue.",
+
+  "debug_message": " 🔍 Debugging Detected! 🔍\n\nRunning the app in debug mode can expose sensitive data and security vulnerabilities. Please use a secure environment.",
+  "developer_mode_message": "⚠️ Developer Mode Enabled! ⚠️\n\nFor security reasons, please disable developer mode before using this app.",
+
+  "back": "Back",
+
+  "English": "English",
+  "Khmer": "Khmer",
+  "Korean": "Korean",
+  "Chinese": "Chinese",
+
+  "tts_limit_message": "Text exceeds the character limit for text-to-speech (200 characters). Please shorten your input and try again.",
+
+  "new_update": "Update Available",
+  "new_update_des1": "A new version",
+  "new_update_des2": "is available. Please update the app.",
+
+  "no_tts": "Error: No text provided for speech.",
+
+  "requried_ios_version": "This feature requires iOS 15.5 or later. Please update your device to continue.",
+
+  "offline_message": "You're in offline mode. Some features might be limited",
+
+  "not_found": "Not Found",
+
+  "maintenance": "Server is Under maintenance"
+}
