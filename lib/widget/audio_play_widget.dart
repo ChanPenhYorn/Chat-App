@@ -11,7 +11,7 @@ class AudioWaveformPlayer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller =
-        Get.put(AudioPlayerController(audioPath), tag: audioPath);
+        Get.put(AudioPlayerController(audioUrl: audioPath), tag: audioPath);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
@@ -25,16 +25,15 @@ class AudioWaveformPlayer extends StatelessWidget {
             )),
         Expanded(
           child: AudioFileWaveforms(
-            size: const Size(double.infinity, 44),
-            playerController: controller.playerController,
-            waveformType: WaveformType.fitWidth,
-            playerWaveStyle: const PlayerWaveStyle(
-              fixedWaveColor: Colors.grey,
-              liveWaveColor: Colors.blue,
-              spacing: 6,
-              scaleFactor: 50,
-            ),
-          ),
+              size: Size(double.infinity, 44),
+              playerController: controller.playerController,
+              waveformType: WaveformType.fitWidth,
+              playerWaveStyle: const PlayerWaveStyle(
+                fixedWaveColor: Colors.grey,
+                liveWaveColor: Colors.blue,
+              ),
+              waveformData: controller.playerController.waveformData,
+              enableSeekGesture: true),
         ),
         const SizedBox(width: 8),
         Obx(() => Text(

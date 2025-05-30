@@ -112,6 +112,13 @@ class ChatController extends GetxController {
         content: "Great! Let's catch up later.",
         type: MessageTypeEnum.text,
       ),
+      MessageModel(
+        id: UniqueKey().toString(),
+        senderId: 'currentUser',
+        timestamp: DateTime.now().subtract(Duration(minutes: 1)),
+        content: "https://www.kozco.com/tech/piano2-CoolEdit.mp3",
+        type: MessageTypeEnum.audio,
+      ),
     ]);
   }
 }

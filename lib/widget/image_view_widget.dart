@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:chatapp/widget/app_cached_netword_image_widget.dart';
 import 'package:flutter/material.dart';
 
 class ImageViewerScreen extends StatelessWidget {
@@ -19,28 +20,8 @@ class ImageViewerScreen extends StatelessWidget {
       backgroundColor: Colors.black,
       body: Center(
         child: _isNetworkImage(imagePath)
-            ? Image.network(
-                imagePath,
-                fit: BoxFit.contain,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return const CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  return const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.error, color: Colors.red, size: 40),
-                      SizedBox(height: 8),
-                      Text(
-                        'Failed to load network image',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ],
-                  );
-                },
+            ? AppCachedNetwordImageWidget(
+                imageUrl: imagePath,
               )
             : Image.file(
                 File(imagePath),

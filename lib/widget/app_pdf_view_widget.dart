@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:hexcolor/hexcolor.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
 class PdfViewerScreen extends StatelessWidget {
@@ -16,6 +17,7 @@ class PdfViewerScreen extends StatelessWidget {
     final isNetwork = _isNetworkUrl(filePath);
 
     return Scaffold(
+      backgroundColor: HexColor("#f2f2f7"),
       appBar: AppBar(title: const Text("PDF Viewer")),
       body: isNetwork
           ? SfPdfViewer.network(filePath)
