@@ -1,37 +1,38 @@
 import 'dart:io';
-import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:get/get.dart';
+import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
 class AudioPlayerController extends GetxController {
-  final String audioPath;
-
   late PlayerController playerController;
-  final RxBool isPlaying = false.obs;
-  final RxString duration = '00:00'.obs;
-  final RxString totalDuration = '00:00'.obs;
-  final RxBool isPlayerPrepared = false.obs;
+  final isPlaying = false.obs;
+  final isLoading = true.obs;
+  final duration = '00:00'.obs;
+  final totalDuration = '00:00'.obs;
+  final isPlayerPrepared = false.obs;
 
-  late String _localPath;
+  final String audioUrl;
+  static AudioPlayerController?
+      _currentPlayingController; // Track current playing controller
 
-  AudioPlayerController(this.audioPath) {
+  AudioPlayerController({required this.audioUrl});
+
+  @override
+  void onInit() {
+    super.onInit();
     playerController = PlayerController();
     _initPlayer();
   }
 
   Future<void> _initPlayer() async {
-    try {
-      String pathToUse = audioPath;
+    isLoading.value = true;
 
-      // Check if it's a network file
-      if (audioPath.startsWith("http")) {
-        _localPath = await _downloadFile(audioPath);
-        pathToUse = _localPath;
-      }
+    try {
+      final localPath = await _downloadFile(audioUrl);
 
       await playerController.preparePlayer(
-        path: pathToUse,
+        path: localPath,
         shouldExtractWaveform: true,
         noOfSamples: 100,
         volume: 1.0,
@@ -42,50 +43,66 @@ class AudioPlayerController extends GetxController {
 
       playerController.onCurrentDurationChanged.listen((currentMs) {
         duration.value = _formatDuration(currentMs);
-        if (currentMs >= durationMs && isPlaying.value) {
+        if (currentMs >= durationMs) {
           isPlaying.value = false;
-          duration.value = _formatDuration(0);
+          _currentPlayingController = null; // Reset when audio finishes
         }
       });
 
       playerController.onPlayerStateChanged.listen((state) {
         isPlaying.value = state == PlayerState.playing;
+        if (state == PlayerState.stopped || state == PlayerState.paused) {
+          if (_currentPlayingController == this) {
+            _currentPlayingController = null; // Clear if this controller stops
+          }
+        }
       });
 
       isPlayerPrepared.value = true;
     } catch (e) {
-      print('Error initializing player: $e');
-      isPlayerPrepared.value = false;
+      Get.snackbar('Error', 'Audio load failed: $e');
+    } finally {
+      isLoading.value = false;
     }
   }
 
   Future<String> _downloadFile(String url) async {
     final response = await http.get(Uri.parse(url));
     final tempDir = await getTemporaryDirectory();
-    final file = File('${tempDir.path}/${url.split('/').last}');
+    final filePath = '${tempDir.path}/${url.split('/').last}';
+    final file = File(filePath);
     await file.writeAsBytes(response.bodyBytes);
-    return file.path;
+    return filePath;
   }
 
   Future<void> togglePlayPause() async {
-    if (!isPlayerPrepared.value) {
-      await _initPlayer();
+    if (!isPlayerPrepared.value) return;
+
+    // If another audio is playing, stop it
+    if (_currentPlayingController != null &&
+        _currentPlayingController != this) {
+      await _currentPlayingController!.pausePlayer();
+      _currentPlayingController!.isPlaying.value = false;
     }
 
     if (isPlaying.value) {
       await playerController.pausePlayer();
+      _currentPlayingController = null;
     } else {
       await playerController.startPlayer();
+      _currentPlayingController =
+          this; // Set this as the current playing controller
     }
   }
 
-  Future<void> stopAndReset() async {
+  Future<void> pausePlayer() async {
     if (isPlaying.value) {
-      await playerController.stopPlayer();
+      await playerController.pausePlayer();
+      isPlaying.value = false;
+      if (_currentPlayingController == this) {
+        _currentPlayingController = null;
+      }
     }
-
-    duration.value = _formatDuration(0);
-    isPlaying.value = false;
   }
 
   String _formatDuration(int milliseconds) {
@@ -96,6 +113,9 @@ class AudioPlayerController extends GetxController {
 
   @override
   void onClose() {
+    if (_currentPlayingController == this) {
+      _currentPlayingController = null;
+    }
     playerController.stopPlayer();
     playerController.dispose();
     super.onClose();

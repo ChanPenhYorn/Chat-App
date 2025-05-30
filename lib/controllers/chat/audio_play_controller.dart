@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:http/http.dart' as http;
@@ -12,9 +13,10 @@ class AudioPlayerController extends GetxController {
   final totalDuration = '00:00'.obs;
   final isPlayerPrepared = false.obs;
 
+  String? currentAudioUrl; // Track currently loaded audio URL
+  String? _localFilePath; // Store local file path for reuse
+
   final String audioUrl;
-  static AudioPlayerController?
-      _currentPlayingController; // Track current playing controller
 
   AudioPlayerController({required this.audioUrl});
 
@@ -22,86 +24,158 @@ class AudioPlayerController extends GetxController {
   void onInit() {
     super.onInit();
     playerController = PlayerController();
-    _initPlayer();
+    if (audioUrl != currentAudioUrl) {
+      _initPlayer();
+      currentAudioUrl = audioUrl;
+    }
   }
 
   Future<void> _initPlayer() async {
     isLoading.value = true;
-
+    isPlayerPrepared.value = false; // Reset prepared state
     try {
-      final localPath = await _downloadFile(audioUrl);
+      // Reuse existing file if available and URL hasn't changed
+      if (!kIsWeb && _localFilePath != null && audioUrl == currentAudioUrl) {
+        final file = File(_localFilePath!);
+        if (!await file.exists()) {
+          _localFilePath = await _downloadFile(audioUrl);
+        }
+      } else {
+        _localFilePath = kIsWeb ? audioUrl : await _downloadFile(audioUrl);
+      }
 
       await playerController.preparePlayer(
-        path: localPath,
+        path: _localFilePath!,
         shouldExtractWaveform: true,
-        noOfSamples: 1000,
+        noOfSamples: 100,
         volume: 1.0,
       );
-
       final durationMs = await playerController.getDuration(DurationType.max);
       totalDuration.value = _formatDuration(durationMs);
-
       playerController.onCurrentDurationChanged.listen((currentMs) {
         duration.value = _formatDuration(currentMs);
-        if (currentMs >= durationMs) {
-          isPlaying.value = false;
-          _currentPlayingController = null; // Reset when audio finishes
-        }
       });
-
-      playerController.onPlayerStateChanged.listen((state) {
-        isPlaying.value = state == PlayerState.playing;
-        if (state == PlayerState.stopped || state == PlayerState.paused) {
-          if (_currentPlayingController == this) {
-            _currentPlayingController = null; // Clear if this controller stops
-          }
-        }
+      playerController.onCompletion.listen((_) async {
+        duration.value = '00:00';
+        isPlaying.value = false;
+        // Reinitialize player to ensure it can be reused
+        await playerController.stopPlayer();
+        await playerController.preparePlayer(
+          path: _localFilePath!,
+          shouldExtractWaveform: true,
+          noOfSamples: 100,
+          volume: 1.0,
+        );
+        await playerController.seekTo(0);
+        isPlayerPrepared.value = true;
+        Get.log('Player reinitialized after completion');
       });
-
       isPlayerPrepared.value = true;
     } catch (e) {
-      Get.snackbar('Error', 'Audio load failed: $e');
+      Get.snackbar('Error', 'Failed to load audio: ${e.toString()}');
+      Get.log('InitPlayer Error: $e');
     } finally {
       isLoading.value = false;
     }
   }
 
-  Future<String> _downloadFile(String url) async {
-    final response = await http.get(Uri.parse(url));
-    final tempDir = await getTemporaryDirectory();
-    final filePath = '${tempDir.path}/${url.split('/').last}';
-    final file = File(filePath);
-    await file.writeAsBytes(response.bodyBytes);
-    return filePath;
-  }
-
   Future<void> togglePlayPause() async {
-    if (!isPlayerPrepared.value) return;
-
-    // If another audio is playing, stop it
-    if (_currentPlayingController != null &&
-        _currentPlayingController != this) {
-      await _currentPlayingController!.pausePlayer();
-      _currentPlayingController!.isPlaying.value = false;
+    if (!isPlayerPrepared.value) {
+      Get.log('Player not prepared, reinitializing');
+      await _initPlayer();
+      return;
     }
 
-    if (isPlaying.value) {
-      await playerController.pausePlayer();
-      _currentPlayingController = null;
-    } else {
-      await playerController.startPlayer();
-      _currentPlayingController =
-          this; // Set this as the current playing controller
+    if (audioUrl != currentAudioUrl) {
+      Get.log('URL changed, reinitializing');
+      currentAudioUrl = audioUrl;
+      await playerController.stopPlayer();
+      playerController.dispose();
+      playerController = PlayerController();
+      await _initPlayer();
+      return;
+    }
+
+    try {
+      if (isPlaying.value) {
+        await playerController.pausePlayer();
+        isPlaying.value = false;
+      } else {
+        await playerController.startPlayer();
+        isPlaying.value = true;
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to toggle play/pause: ${e.toString()}');
+      Get.log('TogglePlayPause Error: $e');
+      // Fallback: Reinitialize player if startPlayer fails
+      await _initPlayer();
     }
   }
 
   Future<void> pausePlayer() async {
     if (isPlaying.value) {
-      await playerController.pausePlayer();
-      isPlaying.value = false;
-      if (_currentPlayingController == this) {
-        _currentPlayingController = null;
+      try {
+        await playerController.pausePlayer();
+        isPlaying.value = false;
+      } catch (e) {
+        Get.log('PausePlayer Error: $e');
       }
+    }
+  }
+
+  Future<void> replayAudio() async {
+    if (!isPlayerPrepared.value) {
+      Get.log('Player not prepared for replay, reinitializing');
+      await _initPlayer();
+      return;
+    }
+
+    try {
+      await playerController.seekTo(0);
+      await playerController.startPlayer();
+      isPlaying.value = true;
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to replay audio: ${e.toString()}');
+      Get.log('ReplayAudio Error: $e');
+      // Fallback: Reinitialize player if startPlayer fails
+      await _initPlayer();
+    }
+  }
+
+  Future<void> restartAudio() async {
+    if (!isPlayerPrepared.value) {
+      Get.log('Player not prepared for restart, reinitializing');
+      await _initPlayer();
+      return;
+    }
+
+    try {
+      await playerController.seekTo(0);
+      await playerController.startPlayer();
+      isPlaying.value = true;
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to restart audio: ${e.toString()}');
+      Get.log('RestartAudio Error: $e');
+      // Fallback: Reinitialize player if startPlayer fails
+      await _initPlayer();
+    }
+  }
+
+  Future<String> _downloadFile(String url) async {
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode != 200) {
+        throw Exception('Failed to download audio: ${response.statusCode}');
+      }
+      final tempDir = await getTemporaryDirectory();
+      final filePath = '${tempDir.path}/${url.split('/').last}';
+      final file = File(filePath);
+      await file.writeAsBytes(response.bodyBytes);
+      Get.log('File downloaded: $filePath');
+      return filePath;
+    } catch (e) {
+      Get.log('DownloadFile Error: $e');
+      rethrow;
     }
   }
 
@@ -113,11 +187,14 @@ class AudioPlayerController extends GetxController {
 
   @override
   void onClose() {
-    if (_currentPlayingController == this) {
-      _currentPlayingController = null;
-    }
     playerController.stopPlayer();
     playerController.dispose();
+    if (!kIsWeb && _localFilePath != null) {
+      final file = File(_localFilePath!);
+      if (file.existsSync()) {
+        file.deleteSync();
+      }
+    }
     super.onClose();
   }
 }

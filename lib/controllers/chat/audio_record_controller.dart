@@ -20,10 +20,16 @@ class AudioRecorderController extends GetxController {
         '${dir.path}/recording_${DateTime.now().millisecondsSinceEpoch}.aac';
 
     recorderController
+      // ..androidEncoder = AndroidEncoder.aac
+      // ..androidOutputFormat = AndroidOutputFormat.mpeg4
+      // ..iosEncoder = IosEncoder.kAudioFormatMPEG4AAC
+      // ..sampleRate = 16000;
       ..androidEncoder = AndroidEncoder.aac
       ..androidOutputFormat = AndroidOutputFormat.mpeg4
       ..iosEncoder = IosEncoder.kAudioFormatMPEG4AAC
-      ..sampleRate = 16000;
+      ..sampleRate = 16000
+
+      ..updateFrequency = const Duration(milliseconds: 100);
   }
 
   Future<void> startRecording() async {
