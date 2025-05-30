@@ -12,6 +12,7 @@ class AudioPlayerController extends GetxController {
   final duration = '00:00'.obs;
   final totalDuration = '00:00'.obs;
   final isPlayerPrepared = false.obs;
+  static AudioPlayerController? _currentlyPlayingController;
 
   String? currentAudioUrl; // Track currently loaded audio URL
   String? _localFilePath; // Store local file path for reuse
@@ -55,10 +56,25 @@ class AudioPlayerController extends GetxController {
       playerController.onCurrentDurationChanged.listen((currentMs) {
         duration.value = _formatDuration(currentMs);
       });
+      // playerController.onCompletion.listen((_) async {
+      //   duration.value = '00:00';
+      //   isPlaying.value = false;
+      //   // Reinitialize player to ensure it can be reused
+      //   await playerController.stopPlayer();
+      //   await playerController.preparePlayer(
+      //     path: _localFilePath!,
+      //     shouldExtractWaveform: true,
+      //     noOfSamples: 100,
+      //     volume: 1.0,
+      //   );
+      //   await playerController.seekTo(0);
+      //   isPlayerPrepared.value = true;
+      //   Get.log('Player reinitialized after completion');
+      // });
+
       playerController.onCompletion.listen((_) async {
         duration.value = '00:00';
         isPlaying.value = false;
-        // Reinitialize player to ensure it can be reused
         await playerController.stopPlayer();
         await playerController.preparePlayer(
           path: _localFilePath!,
@@ -68,8 +84,14 @@ class AudioPlayerController extends GetxController {
         );
         await playerController.seekTo(0);
         isPlayerPrepared.value = true;
+
+        // Clear current controller reference
+        if (_currentlyPlayingController == this) {
+          _currentlyPlayingController = null;
+        }
         Get.log('Player reinitialized after completion');
       });
+
       isPlayerPrepared.value = true;
     } catch (e) {
       Get.snackbar('Error', 'Failed to load audio: ${e.toString()}');
@@ -79,19 +101,109 @@ class AudioPlayerController extends GetxController {
     }
   }
 
-  Future<void> togglePlayPause() async {
-    if (!isPlayerPrepared.value) {
-      Get.log('Player not prepared, reinitializing');
-      await _initPlayer();
+  Future<void> stopAndDisposePlayer() async {
+    try {
+      await playerController.stopPlayer();
+      playerController.dispose();
+      isPlaying.value = false;
+    } catch (e) {
+      Get.log('stopAndDisposePlayer Error: $e');
+    }
+  }
+
+  Future<void> switchAudio(String newAudioUrl) async {
+    // If this is the same URL and player is prepared, just toggle play/pause
+    if (newAudioUrl == currentAudioUrl && isPlayerPrepared.value) {
+      await togglePlayPause();
       return;
     }
 
-    if (audioUrl != currentAudioUrl) {
-      Get.log('URL changed, reinitializing');
-      currentAudioUrl = audioUrl;
-      await playerController.stopPlayer();
-      playerController.dispose();
+    try {
+      isLoading.value = true;
+
+      // Stop any currently playing controller
+      if (_currentlyPlayingController != null &&
+          _currentlyPlayingController != this) {
+        await _currentlyPlayingController!.pausePlayer();
+      }
+
+      // Stop and dispose current player if it exists
+      if (isPlayerPrepared.value) {
+        await playerController.stopPlayer();
+        // await playerController.dispose();
+      }
+
+      // Update the global reference
+      _currentlyPlayingController = this;
+      currentAudioUrl = newAudioUrl;
+      isPlaying.value = false;
+      isPlayerPrepared.value = false;
+
+      // Create new player controller
       playerController = PlayerController();
+
+      // Initialize with new audio
+      await _initPlayer();
+
+      // Start playback
+      await playerController.startPlayer();
+      isPlaying.value = true;
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to switch audio: ${e.toString()}');
+      Get.log('SwitchAudio Error: $e');
+      // Reset states on error
+      isPlaying.value = false;
+      isLoading.value = false;
+      isPlayerPrepared.value = false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Future<void> togglePlayPause() async {
+  //   if (!isPlayerPrepared.value) {
+  //     Get.log('Player not prepared, reinitializing');
+  //     await _initPlayer();
+  //     return;
+  //   }
+
+  //   if (audioUrl != currentAudioUrl) {
+  //     Get.log('URL changed, reinitializing');
+  //     currentAudioUrl = audioUrl;
+  //     await playerController.stopPlayer();
+  //     playerController.dispose();
+  //     playerController = PlayerController();
+  //     await _initPlayer();
+  //     return;
+  //   }
+
+  //   try {
+  //     if (isPlaying.value) {
+  //       await playerController.pausePlayer();
+  //       isPlaying.value = false;
+  //     } else {
+  //       await playerController.startPlayer();
+  //       isPlaying.value = true;
+  //     }
+  //   } catch (e) {
+  //     Get.snackbar('Error', 'Failed to toggle play/pause: ${e.toString()}');
+  //     Get.log('TogglePlayPause Error: $e');
+  //     // Fallback: Reinitialize player if startPlayer fails
+  //     await _initPlayer();
+  //   }
+  // }
+
+  Future<void> togglePlayPause() async {
+    // If the requested audio is different from what's currently loaded
+    if (audioUrl != currentAudioUrl) {
+      Get.log('Different audio requested, switching...');
+      await switchAudio(audioUrl); // Use switchAudio to handle the transition
+      return;
+    }
+
+    // If player isn't prepared, initialize it
+    if (!isPlayerPrepared.value) {
+      Get.log('Player not prepared, initializing...');
       await _initPlayer();
       return;
     }
@@ -100,14 +212,27 @@ class AudioPlayerController extends GetxController {
       if (isPlaying.value) {
         await playerController.pausePlayer();
         isPlaying.value = false;
+
+        // Clear current controller reference when pausing
+        if (_currentlyPlayingController == this) {
+          _currentlyPlayingController = null;
+        }
       } else {
+        // If another controller is playing, pause it first
+        if (_currentlyPlayingController != null &&
+            _currentlyPlayingController != this) {
+          await _currentlyPlayingController!.pausePlayer();
+        }
+
+        // Set this as the currently playing controller
+        _currentlyPlayingController = this;
         await playerController.startPlayer();
         isPlaying.value = true;
       }
     } catch (e) {
       Get.snackbar('Error', 'Failed to toggle play/pause: ${e.toString()}');
       Get.log('TogglePlayPause Error: $e');
-      // Fallback: Reinitialize player if startPlayer fails
+      // Attempt to recover by reinitializing
       await _initPlayer();
     }
   }

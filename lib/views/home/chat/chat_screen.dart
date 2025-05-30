@@ -36,6 +36,8 @@ class _ChatScreenState extends State<ChatScreen> {
       chatController.sendText(text);
       _controller.clear();
     }
+
+    chatController.isRecordingAudio(true);
   }
 
   void _filePicker() async {
@@ -163,7 +165,7 @@ Widget buildAudioMessage(BuildContext context, String audioPath) {
   return Align(
     alignment: Alignment.centerRight,
     child: Container(
-      width: MediaQuery.of(context).size.width * 0.8,
+      width: MediaQuery.of(context).size.width * 0.7,
       margin: const EdgeInsets.symmetric(vertical: 6),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -243,14 +245,14 @@ Widget buildImageMessage(String imagePath) {
           borderRadius: BorderRadius.circular(8),
           child: isNetworkImage(imagePath)
               ? AppCachedNetwordImageWidget(
-                  width: 200,
-                  height: 200,
+                  width: 250,
+                  height: 250,
                   imageUrl: imagePath,
                 )
               : Image.file(
                   File(imagePath),
-                  width: 200,
-                  height: 200,
+                  width: 250,
+                  height: 250,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return const Icon(Icons.error);
