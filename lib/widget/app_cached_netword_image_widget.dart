@@ -30,12 +30,16 @@ class AppCachedNetwordImageWidget extends StatelessWidget {
         width: width,
         height: height,
         progressIndicatorBuilder: (context, url, downloadProgress) => Center(
-              child: SpinKitRing(color: AppColors.primaryLight, size: 50.0),
+              child: SpinKitRing(
+                color: AppColors.primaryLight,
+                size: 20.0,
+                lineWidth: 4,
+              ),
             ),
         errorWidget: (context, url, error) =>
             errorWidget ??
             SvgPicture.asset(
-              "assets/images/image_load.png",
+              "assets/images/no_profile.png",
               color: AppColors.primaryLight,
             ));
   }

@@ -1,6 +1,4 @@
 import 'dart:io';
-
-import 'package:audioplayers/audioplayers.dart';
 import 'package:chatapp/controllers/chat/audio_record_controller.dart';
 import 'package:chatapp/controllers/chat/chat_controller.dart';
 import 'package:chatapp/utils/app_font.dart';
@@ -27,8 +25,9 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
-  final ChatController chatController = Get.put(ChatController());
-  final audioCtrl = Get.put(AudioRecorderController());
+  final ChatController chatController = Get.find();
+
+  final AudioRecorderController audioCtrl = Get.find();
 
   void _sendMessage() {
     final text = _controller.text.trim();
@@ -60,6 +59,34 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     }
   }
+
+  bool shouldShowProfile(int index) {
+    if (index == 0) {
+      // First message (bottom of list in reversed order) should show profile
+      return true;
+    }
+
+    final currentMessage = chatController.messages[index];
+    final previousMessage = chatController.messages[index - 1];
+
+    final isDifferentSender =
+        currentMessage.senderId != previousMessage.senderId;
+
+    return isDifferentSender;
+  }
+
+  // bool shouldShowProfile(int index) {
+  //   if (index == chatController.messages.length - 1) {
+  //     return true;
+  //   }
+
+  //   final currentMessage = chatController.messages[index];
+  //   final nextMessage = chatController.messages[index + 1];
+
+  //   final isDifferentSender = currentMessage.senderId != nextMessage.senderId;
+
+  //   return isDifferentSender;
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -140,15 +167,23 @@ class _ChatScreenState extends State<ChatScreen> {
                   itemCount: chatController.messages.length,
                   itemBuilder: (context, index) {
                     final message = chatController.messages[index];
+                    final isCurrentUser = message.senderId == 'currentUser';
+                    final senderProfile = message.profile;
+                    final showProfile = shouldShowProfile(index);
+
                     switch (message.type) {
                       case MessageTypeEnum.text:
-                        return buildTextMessage(message.content);
+                        return buildTextMessage(message.content, isCurrentUser,
+                            senderProfile, showProfile);
                       case MessageTypeEnum.image:
-                        return buildImageMessage(message.content);
+                        return buildImageMessage(message.content, isCurrentUser,
+                            senderProfile, showProfile);
                       case MessageTypeEnum.file:
-                        return buildFileMessage(message.content, context);
+                        return buildFileMessage(message.content, context,
+                            isCurrentUser, senderProfile, showProfile);
                       case MessageTypeEnum.audio:
-                        return buildAudioMessage(context, message.content);
+                        return buildAudioMessage(context, message.content,
+                            isCurrentUser, senderProfile, showProfile);
                     }
                   },
                 );
@@ -161,23 +196,41 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 }
 
-Widget buildAudioMessage(BuildContext context, String audioPath) {
+Widget buildAudioMessage(BuildContext context, String audioPath,
+    bool isCurrentUser, String? senderProfile, bool showProfile) {
   return Align(
-    alignment: Alignment.centerRight,
-    child: Container(
-      width: MediaQuery.of(context).size.width * 0.7,
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+    alignment: isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment:
+            isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end, // Align items at the bottom
+        children: [
+          if (!isCurrentUser && showProfile)
+            buildChatProfile(senderProfile ?? "")
+          else
+            SizedBox(
+              width: 40,
+            ),
+          if (!isCurrentUser && showProfile) const SizedBox(width: 8),
+          Container(
+            width: MediaQuery.of(context).size.width * 0.7,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: AudioWaveformPlayer(audioPath: audioPath),
+          ),
+        ],
       ),
-      child: AudioWaveformPlayer(audioPath: audioPath),
     ),
   );
 }
 
-Widget buildFileMessage(String filePath, BuildContext context) {
+Widget buildFileMessage(String filePath, BuildContext context,
+    bool isCurrentUser, String? senderProfile, bool showProfile) {
   final fileName = path.basename(filePath);
 
   return GestureDetector(
@@ -189,24 +242,41 @@ Widget buildFileMessage(String filePath, BuildContext context) {
           ));
     },
     child: Align(
-      alignment: Alignment.centerRight,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.grey[300],
-          borderRadius: BorderRadius.circular(12),
-        ),
+      alignment: isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment:
+              isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+          crossAxisAlignment:
+              CrossAxisAlignment.end, // Align items at the bottom
           children: [
-            const Icon(Icons.insert_drive_file, color: Colors.blue),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                fileName,
-                style: const TextStyle(color: Colors.black87),
-                overflow: TextOverflow.ellipsis,
+            if (!isCurrentUser && showProfile)
+              buildChatProfile(senderProfile ?? "")
+            else
+              SizedBox(
+                width: 40,
+              ),
+            if (!isCurrentUser && showProfile) const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.insert_drive_file, color: Colors.blue),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      fileName,
+                      style: const TextStyle(color: Colors.black87),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -216,7 +286,8 @@ Widget buildFileMessage(String filePath, BuildContext context) {
   );
 }
 
-Widget buildImageMessage(String imagePath) {
+Widget buildImageMessage(String imagePath, bool isCurrentUser,
+    String? senderProfile, bool showProfile) {
   // Helper method to determine if it's a network URL
   bool isNetworkImage(String path) {
     final trimmed = path.trim();
@@ -233,51 +304,192 @@ Widget buildImageMessage(String imagePath) {
       );
     },
     child: Align(
-      alignment: Alignment.centerRight,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: isNetworkImage(imagePath)
-              ? AppCachedNetwordImageWidget(
-                  width: 250,
-                  height: 250,
-                  imageUrl: imagePath,
-                )
-              : Image.file(
-                  File(imagePath),
-                  width: 250,
-                  height: 250,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(Icons.error);
-                  },
-                ),
+      alignment: isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisAlignment:
+              isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+          crossAxisAlignment:
+              CrossAxisAlignment.end, // Align items at the bottom
+          children: [
+            if (!isCurrentUser && showProfile)
+              buildChatProfile(senderProfile ?? "")
+            else
+              SizedBox(
+                width: 40,
+              ),
+            if (!isCurrentUser && showProfile) const SizedBox(width: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: isNetworkImage(imagePath)
+                    ? AppCachedNetwordImageWidget(
+                        width: 250,
+                        height: 250,
+                        imageUrl: imagePath,
+                      )
+                    : Image.file(
+                        File(imagePath),
+                        width: 250,
+                        height: 250,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(Icons.error);
+                        },
+                      ),
+              ),
+            ),
+          ],
         ),
       ),
     ),
   );
 }
 
-Widget buildTextMessage(String text) {
+// Widget buildTextMessage(
+//     String text, bool isCurrentUser, String? senderProfile, bool showProfile) {
+//   return Align(
+//     alignment: isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
+//     child: Padding(
+//       padding: const EdgeInsets.symmetric(vertical: 4),
+//       child: Row(
+//         mainAxisAlignment:
+//             isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+//         crossAxisAlignment: CrossAxisAlignment.end, // Align items at the bottom
+//         children: [
+//           // if (!isCurrentUser) buildChatProfile(senderProfile ?? ""),
+//           if (!isCurrentUser && showProfile)
+//             buildChatProfile(senderProfile ?? ""),
+//           if (!isCurrentUser && showProfile) const SizedBox(width: 8),
+
+//           Container(
+//             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+//             decoration: BoxDecoration(
+//               color: Colors.blueAccent,
+//               borderRadius: BorderRadius.circular(12),
+//             ),
+//             child: Text(
+//               text,
+//               style: const TextStyle(color: Colors.white),
+//             ),
+//           ),
+//         ],
+//       ),
+//     ),
+//   );
+// }
+
+// Widget buildTextMessage(
+//     String text, bool isCurrentUser, String? senderProfile, bool showProfile) {
+//   return Align(
+//     alignment: isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
+//     child: Padding(
+//       padding: const EdgeInsets.symmetric(vertical: 4),
+//       child: Row(
+//         mainAxisAlignment:
+//             isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+//         crossAxisAlignment: CrossAxisAlignment.end,
+//         children: [
+//           if (!isCurrentUser && showProfile)
+//             buildChatProfile(senderProfile ?? ""),
+//           if (!isCurrentUser && showProfile) const SizedBox(width: 8),
+//           Container(
+//             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+//             decoration: BoxDecoration(
+//               color: isCurrentUser ? Colors.blueAccent : Colors.grey[300],
+//               borderRadius: BorderRadius.only(
+//                 topLeft: const Radius.circular(12),
+//                 topRight: const Radius.circular(12),
+//                 bottomLeft: Radius.circular(isCurrentUser ? 12 : 0),
+//                 bottomRight: Radius.circular(isCurrentUser ? 0 : 12),
+//               ),
+//             ),
+//             child: Text(
+//               text,
+//               style: TextStyle(
+//                 color: isCurrentUser ? Colors.white : Colors.black87,
+//               ),
+//             ),
+//           ),
+//         ],
+//       ),
+//     ),
+//   );
+// }
+
+Widget buildTextMessage(
+    String text, bool isCurrentUser, String? senderProfile, bool showProfile) {
   return Align(
-    alignment: Alignment.centerRight,
-    child: Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.blueAccent,
-        borderRadius: BorderRadius.circular(12),
+    alignment: isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment:
+            isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (!isCurrentUser && showProfile)
+            buildChatProfile(senderProfile ?? "")
+          else
+            SizedBox(
+              width: 40,
+            ),
+          if (!isCurrentUser && showProfile) const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(Get.context!).size.width * 0.7,
+            ),
+            decoration: BoxDecoration(
+              color: isCurrentUser ? Colors.blueAccent : Colors.grey[300],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              text,
+              style: TextStyle(
+                color: isCurrentUser ? Colors.white : Colors.black87,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ],
       ),
-      child: Text(
-        text,
-        style: const TextStyle(color: Colors.white),
-      ),
+    ),
+  );
+}
+
+// Widget buildChatProfile(String? imageUrl) {
+//   if (imageUrl == null || imageUrl.isEmpty) {
+//     return CircleAvatar(
+//       radius: 16,
+//       backgroundColor: Colors.grey[300],
+//       child: const Icon(Icons.person, color: Colors.white),
+//     );
+//   }
+//   return CircleAvatar(
+//     backgroundColor: Colors.grey[300],
+//     radius: 16,
+//     backgroundImage: NetworkImage(imageUrl),
+//   );
+// }
+
+Widget buildChatProfile(String profileUrl, {bool isNotShowProfile = false}) {
+  if (isNotShowProfile) {
+    return SizedBox(
+      width: 32,
+      height: 32,
+    );
+  }
+  return ClipOval(
+    child: AppCachedNetwordImageWidget(
+      width: 32,
+      height: 32,
+      imageUrl: profileUrl,
     ),
   );
 }
