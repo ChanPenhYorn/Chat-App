@@ -126,7 +126,7 @@ class _AudioWaveformPlayerState extends State<AudioWaveformPlayer>
           liveWaveColor: widget.liveWaveColor ?? Colors.blue,
           waveCap: StrokeCap.round,
         ),
-        enableSeekGesture: true,
+        enableSeekGesture: false,
       );
     });
   }

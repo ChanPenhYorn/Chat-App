@@ -75,19 +75,6 @@ class _ChatScreenState extends State<ChatScreen> {
     return isDifferentSender;
   }
 
-  // bool shouldShowProfile(int index) {
-  //   if (index == chatController.messages.length - 1) {
-  //     return true;
-  //   }
-
-  //   final currentMessage = chatController.messages[index];
-  //   final nextMessage = chatController.messages[index + 1];
-
-  //   final isDifferentSender = currentMessage.senderId != nextMessage.senderId;
-
-  //   return isDifferentSender;
-  // }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -150,47 +137,34 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10),
-        child: Column(
-          children: [
-            Container(
-              margin: EdgeInsets.all(10),
-              padding: EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                  color: Colors.white, borderRadius: BorderRadius.circular(16)),
-              child: Text("Today", style: AppFont.medium()),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: Obx(() {
-                return ListView.builder(
-                  reverse: true,
-                  itemCount: chatController.messages.length,
-                  itemBuilder: (context, index) {
-                    final message = chatController.messages[index];
-                    final isCurrentUser = message.senderId == 'currentUser';
-                    final senderProfile = message.profile;
-                    final showProfile = shouldShowProfile(index);
+        child: Obx(() {
+          return ListView.builder(
+            reverse: true,
+            shrinkWrap: true,
+            itemCount: chatController.messages.length,
+            itemBuilder: (context, index) {
+              final message = chatController.messages[index];
+              final isCurrentUser = message.senderId == 'currentUser';
+              final senderProfile = message.profile;
+              final showProfile = shouldShowProfile(index);
 
-                    switch (message.type) {
-                      case MessageTypeEnum.text:
-                        return buildTextMessage(message.content, isCurrentUser,
-                            senderProfile, showProfile);
-                      case MessageTypeEnum.image:
-                        return buildImageMessage(message.content, isCurrentUser,
-                            senderProfile, showProfile);
-                      case MessageTypeEnum.file:
-                        return buildFileMessage(message.content, context,
-                            isCurrentUser, senderProfile, showProfile);
-                      case MessageTypeEnum.audio:
-                        return buildAudioMessage(context, message.content,
-                            isCurrentUser, senderProfile, showProfile);
-                    }
-                  },
-                );
-              }),
-            )
-          ],
-        ),
+              switch (message.type) {
+                case MessageTypeEnum.text:
+                  return buildTextMessage(message.content, isCurrentUser,
+                      senderProfile, showProfile);
+                case MessageTypeEnum.image:
+                  return buildImageMessage(message.content, isCurrentUser,
+                      senderProfile, showProfile);
+                case MessageTypeEnum.file:
+                  return buildFileMessage(message.content, context,
+                      isCurrentUser, senderProfile, showProfile);
+                case MessageTypeEnum.audio:
+                  return buildAudioMessage(context, message.content,
+                      isCurrentUser, senderProfile, showProfile);
+              }
+            },
+          );
+        }),
       ),
     );
   }
@@ -351,77 +325,6 @@ Widget buildImageMessage(String imagePath, bool isCurrentUser,
   );
 }
 
-// Widget buildTextMessage(
-//     String text, bool isCurrentUser, String? senderProfile, bool showProfile) {
-//   return Align(
-//     alignment: isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
-//     child: Padding(
-//       padding: const EdgeInsets.symmetric(vertical: 4),
-//       child: Row(
-//         mainAxisAlignment:
-//             isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-//         crossAxisAlignment: CrossAxisAlignment.end, // Align items at the bottom
-//         children: [
-//           // if (!isCurrentUser) buildChatProfile(senderProfile ?? ""),
-//           if (!isCurrentUser && showProfile)
-//             buildChatProfile(senderProfile ?? ""),
-//           if (!isCurrentUser && showProfile) const SizedBox(width: 8),
-
-//           Container(
-//             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-//             decoration: BoxDecoration(
-//               color: Colors.blueAccent,
-//               borderRadius: BorderRadius.circular(12),
-//             ),
-//             child: Text(
-//               text,
-//               style: const TextStyle(color: Colors.white),
-//             ),
-//           ),
-//         ],
-//       ),
-//     ),
-//   );
-// }
-
-// Widget buildTextMessage(
-//     String text, bool isCurrentUser, String? senderProfile, bool showProfile) {
-//   return Align(
-//     alignment: isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
-//     child: Padding(
-//       padding: const EdgeInsets.symmetric(vertical: 4),
-//       child: Row(
-//         mainAxisAlignment:
-//             isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-//         crossAxisAlignment: CrossAxisAlignment.end,
-//         children: [
-//           if (!isCurrentUser && showProfile)
-//             buildChatProfile(senderProfile ?? ""),
-//           if (!isCurrentUser && showProfile) const SizedBox(width: 8),
-//           Container(
-//             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-//             decoration: BoxDecoration(
-//               color: isCurrentUser ? Colors.blueAccent : Colors.grey[300],
-//               borderRadius: BorderRadius.only(
-//                 topLeft: const Radius.circular(12),
-//                 topRight: const Radius.circular(12),
-//                 bottomLeft: Radius.circular(isCurrentUser ? 12 : 0),
-//                 bottomRight: Radius.circular(isCurrentUser ? 0 : 12),
-//               ),
-//             ),
-//             child: Text(
-//               text,
-//               style: TextStyle(
-//                 color: isCurrentUser ? Colors.white : Colors.black87,
-//               ),
-//             ),
-//           ),
-//         ],
-//       ),
-//     ),
-//   );
-// }
-
 Widget buildTextMessage(
     String text, bool isCurrentUser, String? senderProfile, bool showProfile) {
   return Align(
@@ -462,21 +365,6 @@ Widget buildTextMessage(
     ),
   );
 }
-
-// Widget buildChatProfile(String? imageUrl) {
-//   if (imageUrl == null || imageUrl.isEmpty) {
-//     return CircleAvatar(
-//       radius: 16,
-//       backgroundColor: Colors.grey[300],
-//       child: const Icon(Icons.person, color: Colors.white),
-//     );
-//   }
-//   return CircleAvatar(
-//     backgroundColor: Colors.grey[300],
-//     radius: 16,
-//     backgroundImage: NetworkImage(imageUrl),
-//   );
-// }
 
 Widget buildChatProfile(String profileUrl, {bool isNotShowProfile = false}) {
   if (isNotShowProfile) {
